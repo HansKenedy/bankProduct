@@ -44,14 +44,39 @@ public class AccountPassiveService {
         log.debug("findByAccountNumber executed {}", accountNumber);
         return accountPassiveRepository.findByAccountNumber(accountNumber);
     }
-    public Flux<AccountPassive> findByIdentityNumber(String accountNumber){
+    public Mono<AccountPassive> findByIdentityNumber(String accountNumber){
         log.debug("findByAccountNumber executed {}", accountNumber);
         return accountPassiveRepository.findByIdentityNumber(accountNumber);
     }
-    public Mono<AccountPassive> create(AccountPassive accountPassive) {
-        log.info("create executed {}", accountPassive);
-        Mono<Client> clientMono = clientService.getClient(accountPassive.getIdentityNumber());
-        return accountPassiveRepository.save(accountPassive);
+    public Mono<AccountPassive> create(AccountPassive accountPassive){
+        log.debug("create executed {}",accountPassive);
+
+        Mono<Client> client = clientService.getClient(accountPassive.getIdentityNumber());
+
+        return client.switchIfEmpty(Mono.error(new Exception("Client Not Found" + accountPassive.getIdentityNumber())))
+                .flatMap(client1 -> {
+                    if(client1.getType().equals("PER")){
+                        return accountPassiveRepository.findByIdentityNumber(accountPassive.getIdentityNumber())
+                                .flatMap(account1 -> {
+                                    if(account1.getTypeAccountsPassive().equals(TypeAccountPassive.AHORRO) || account1.getTypeAccountsPassive().equals(TypeAccountPassive.CORRIENTE)||account1.getTypeAccountsPassive().equals(TypeAccountPassive.PLAZOFIJO)){
+                                        return Mono.error(new Exception("No puede tener más de una cuenta de AHORRO, CORRIENTE o PLAZO FIJO" + accountPassive.getAccountNumber()));
+                                    }
+                                    else{
+                                        return accountPassiveRepository.save(accountPassive);
+                                    }
+                                }).switchIfEmpty(accountPassiveRepository.save(accountPassive));
+                    }
+                    else
+                    {
+                        if(accountPassive.getTypeAccountsPassive().equals(TypeAccountPassive.CORRIENTE)){
+                            return accountPassiveRepository.save(accountPassive);
+                        }else{
+                            return Mono.error(new Exception("No puede tener una cuenta de AHORRO O PLAZO FIJO" + accountPassive.getAccountNumber()));
+                        }
+                    }
+
+                });
+
     }
     public Mono<AccountPassive> update(String accountActiveId, AccountPassive accountPassive){
         log.debug("update executed {}:{}", accountActiveId, accountPassive);
@@ -81,8 +106,11 @@ public class AccountPassiveService {
                         } else if (action == Action.DEPOSIT) {
                             dbAccountPassive.setBalance((dbAccountPassive.getBalance() + amount));
                         }
+                        return accountPassiveRepository.save(dbAccountPassive);
+                    }else {
+                        return Mono.error(new Exception("No tiene Saldo" + dbAccountPassive.getAccountNumber()));
                     }
-                    return accountPassiveRepository.save(dbAccountPassive);
+
 
                 });
     }

@@ -58,7 +58,7 @@ public class AccountPassiveController {
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
-    @GetMapping("/document/{accountNumber}")
+    @GetMapping("/documentCard/{accountNumber}")
     public Mono<ResponseEntity<AccountPassiveModel>> getByIdAccountNumber(@PathVariable String accountNumber){
         log.info("getById executed {}", accountNumber);
         Mono<AccountPassive> response = accountPassiveService.findByAccountNumber(accountNumber);
@@ -68,7 +68,7 @@ public class AccountPassiveController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/documentsss/{identityNumber}")
+    @GetMapping("/documentDNI/{identityNumber}")
     public Mono<ResponseEntity<Client>> getByIdIdentityNumber(@PathVariable String identityNumber){
         log.info("getById executed {}", identityNumber);
         Mono<Client> response = clientService.getClient(identityNumber);

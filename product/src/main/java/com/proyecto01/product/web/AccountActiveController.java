@@ -2,11 +2,15 @@ package com.proyecto01.product.web;
 
 import com.proyecto01.product.domain.AccountActive;
 import com.proyecto01.product.domain.AccountPassive;
+import com.proyecto01.product.domain.Action;
+import com.proyecto01.product.domain.TypeAccountActive;
 import com.proyecto01.product.service.AccountActiveService;
 import com.proyecto01.product.service.AccountPassiveService;
 import com.proyecto01.product.web.mapper.AccountActiveMapper;
 
 import com.proyecto01.product.web.model.AccountActiveModel;
+import com.proyecto01.product.web.model.AccountPassiveModel;
+import com.proyecto01.product.web.model.DepositModel;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +58,15 @@ public class AccountActiveController {
                 .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
+    @GetMapping("/documentCard/{accountNumber}")
+    public Mono<ResponseEntity<AccountActiveModel>> getByIdAccountNumber(@PathVariable String accountNumber){
+        log.info("getById executed {}", accountNumber);
+        Mono<AccountActive> response = accountActiveService.findByAccountNumber(accountNumber);
+        return response
+                .map(customer -> accountActiveMapper.entityToModel(customer))
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
 
     @PostMapping
     public Mono<ResponseEntity<AccountActiveModel>> create(@Valid @RequestBody AccountActiveModel request){
@@ -81,6 +94,16 @@ public class AccountActiveController {
         return accountActiveService.delete(id)
                 .map( r -> ResponseEntity.ok().<Void>build())
                 .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping(value = "/depositCredit")
+    public Mono<ResponseEntity<AccountActiveModel>> depositCredit(@Valid @RequestBody DepositModel depositModel) {
+        log.info("deposit executed {}", depositModel);
+        return accountActiveService.updateAccountBalance(depositModel.getAccountNumber(), depositModel.getAmount())
+                .map(accountActive -> accountActiveMapper.entityToModel(accountActive))
+                .flatMap(c -> Mono.just(ResponseEntity.created(URI.create(String.format("http://%s:%s/%s/%s", name, port, "accountActive", c.getId())))
+                        .body(c)))
+                .defaultIfEmpty(ResponseEntity.badRequest().build());
     }
 
 }

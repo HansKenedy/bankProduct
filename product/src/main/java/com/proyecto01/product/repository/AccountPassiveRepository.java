@@ -7,5 +7,5 @@ import reactor.core.publisher.Mono;
 
 public interface AccountPassiveRepository extends ReactiveMongoRepository<AccountPassive, String> {
     Mono<AccountPassive> findByAccountNumber(String accountNumber);
-    Flux<AccountPassive> findByIdentityNumber(String identityNumber);
+    Mono<AccountPassive> findByIdentityNumber(String identityNumber);
 }

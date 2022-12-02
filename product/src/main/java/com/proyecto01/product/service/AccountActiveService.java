@@ -2,6 +2,8 @@ package com.proyecto01.product.service;
 
 
 import com.proyecto01.product.domain.AccountActive;
+import com.proyecto01.product.domain.AccountPassive;
+import com.proyecto01.product.domain.Action;
 import com.proyecto01.product.repository.AccountActiveRepository;
 import com.proyecto01.product.web.mapper.AccountActiveMapper;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +35,10 @@ public class AccountActiveService {
         log.debug("findById executed {}", accountActiveId);
         return accountActiveRepository.findById(accountActiveId);
     }
-
+    public Mono<AccountActive> findByAccountNumber(String accountNumber){
+        log.debug("findByAccountNumber executed {}", accountNumber);
+        return accountActiveRepository.findByAccountNumber(accountNumber);
+    }
     public Mono<AccountActive> create(AccountActive accountActive){
         log.debug("create executed {}", accountActive);
         return accountActiveRepository.save(accountActive);
@@ -55,6 +60,30 @@ public class AccountActiveService {
         return accountActiveRepository.findById(accountActiveId)
                 .flatMap(existingAccountPassiveId -> accountActiveRepository.delete(existingAccountPassiveId)
                         .then(Mono.just(existingAccountPassiveId)));
+    }
+
+    public Mono<AccountActive>  updateAccountBalance(String accountNumber, double amount) {
+        log.info("updateAccountBalance executed {}", amount);
+        return accountActiveRepository.findByAccountNumber(accountNumber)
+                .flatMap(dbAccountActive -> {
+                    if(isAmountAvailable(amount, dbAccountActive.getAmount())){
+
+                        dbAccountActive.setAmountPaid(dbAccountActive.getAmountPaid() + amount);
+                        dbAccountActive.setAmount(dbAccountActive.getAmount() - amount);
+                        return accountActiveRepository.save(dbAccountActive);
+
+                    }else {
+                        return Mono.error(new Exception("No tiene Saldo" + dbAccountActive.getAccountNumber()));
+                    }
+
+
+                });
+    }
+
+
+    public boolean isAmountAvailable(double amount, double accountBalance) {
+
+        return (accountBalance - amount) > 0;
     }
 
 }

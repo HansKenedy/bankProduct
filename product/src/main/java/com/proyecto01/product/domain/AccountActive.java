@@ -34,10 +34,13 @@ public class AccountActive {
     private LocalDate registerDate;
 
     @NotNull
-    private BigDecimal amount;
+    private double amount;
 
     @NotNull
     private int dues;
+
+    @NotNull
+    private double amountPaid;
 
     @NotNull
     private LocalDate highDate;
